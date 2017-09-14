@@ -1,0 +1,81 @@
+buildscript {
+    ext {
+        // Dependency versions
+        artifactBaseName = "service-api-proxy"
+        targetJavaVersion = JavaVersion.current().isJava8() ? JavaVersion.VERSION_1_8 : JavaVersion.VERSION_1_9
+    }
+}
+
+plugins {
+    id 'org.springframework.boot' version '1.5.4.RELEASE'
+    id 'net.researchgate.release' version '2.4.0'
+    id "idea"
+    id "java"
+    id "war"
+}
+
+repositories {
+    mavenCentral()
+}
+
+compileJava {
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+}
+
+configurations {
+    checkerFrameworkAnnotatedJDK {
+        description = 'a copy of JDK classes with Checker Framework type qualifers inserted'
+    }
+    checkerFramework {
+        description = 'The Checker Framework: custom pluggable types for Java'
+    }
+}
+
+dependencies {
+    ext.checkerFrameworkVersion = '2.2.0'
+    ext.jdkVersion = JavaVersion.current().isJava8() ? 'jdk8' : 'jdk9'
+    checkerFrameworkAnnotatedJDK "org.checkerframework:${jdkVersion}:${checkerFrameworkVersion}"
+
+    checkerFramework "org.checkerframework:checker:${checkerFrameworkVersion}"
+    compile "org.checkerframework:checker-qual:${checkerFrameworkVersion}"
+}
+
+allprojects {
+    tasks.withType(JavaCompile).all { JavaCompile compile ->
+        compile.options.compilerArgs = [
+                '-processor', 'org.checkerframework.checker.nullness.NullnessChecker',
+                '-processorpath', "${configurations.checkerFramework.asPath}",
+                '-Xmaxerrs', '10000',
+                // uncomment to turn Checker Framework errors into warnings
+                // '-Awarns', '-Xmaxwarns', '10000',
+                "-Xbootclasspath/p:${configurations.checkerFrameworkAnnotatedJDK.asPath}"
+        ]
+    }
+}
+
+compileJava {
+    options.fork = true
+}
+
+compileTestJava {
+    options.fork = true
+}
+
+war {
+    baseName = "${artifactBaseName}"
+}
+
+bootRepackage {
+    enabled = false
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = "4.1"
+}
+
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}
+
+defaultTasks "clean", "run"
