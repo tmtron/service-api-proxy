@@ -42,7 +42,8 @@ dependencies {
 }
 
 allprojects {
-    tasks.withType(JavaCompile).all { JavaCompile compile ->
+    tasks.withType(JavaCompile).all { compile ->
+    compile.doFirst {
         compile.options.compilerArgs = [
                 '-processor', 'org.checkerframework.checker.nullness.NullnessChecker',
                 '-processorpath', "${configurations.checkerFramework.asPath}",
@@ -50,7 +51,8 @@ allprojects {
                 // uncomment to turn Checker Framework errors into warnings
                 // '-Awarns', '-Xmaxwarns', '10000',
                 "-Xbootclasspath/p:${configurations.checkerFrameworkAnnotatedJDK.asPath}"
-        ]
+            ]
+        }
     }
 }
 
